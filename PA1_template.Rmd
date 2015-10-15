@@ -1,0 +1,125 @@
+---
+title: 'Reproducible Research: Peer Assessment 1'
+output: html_document
+---
+
+### Get raw data
+Load the data and Process/transform the data into a format suitable for analysis.
+
+#### Set WD
+```{r}
+setwd("C://temp/")
+```
+
+#### Load required libraries
+```{r, message=F, warning=F }
+library(dplyr)
+library(ggplot2)
+library(lattice)
+```
+
+#### Load data base from working directory
+```{r}
+activity <- data.frame(read.csv("activity.csv"),stringsAsFactors = FALSE)
+```
+
+## 1-Calculate the total number of steps taken per day
+
+```{r,echo=FALSE }
+activity1 <- activity %>% 
+    na.omit() %>% 
+    summarise(Total_Steps = sum(steps))
+
+activity1
+```
+
+## 2-Histogram of the total number of steps taken each day
+
+```{r,echo=FALSE ,message=F, warning=F}
+activity2 <- activity %>% 
+    na.omit() %>% 
+    select(date,steps) %>%
+    group_by(date) %>%
+    summarise(step_sum = sum(steps))
+   
+
+ggplot(activity2, aes(x=step_sum)) +
+    geom_histogram(colour="black", fill="white")
+```
+
+##3-Summary Statistics of the total number of steps taken per day
+
+```{r,echo=FALSE}
+summary(activity2)
+```
+
+##4-Time series plot of 5-minute intervals and the average number of steps taken, averaged across all days.
+
+```{r,echo=FALSE ,message=F, warning=F}
+activity4 <- activity %>% 
+    na.omit() %>% 
+    select(steps, interval) %>%
+    group_by(interval) %>%
+    summarise(ts = mean(steps))
+
+plot(activity4$interval, activity4$ts, type = "l", xlab = "5-min interval", 
+     ylab = "Average across all Days", main = "Time Series- Average Steps", 
+     col = "blue")
+```
+
+## 5-Total number of missing values in the dataset.
+
+```{r,echo=FALSE }
+activity5 <- activity %>% 
+    filter(is.na(steps))%>%
+    summarize(NA_Number = n())
+
+activity5
+```
+
+### 6-New dataset with missing data filled in.
+```{r, echo=FALSE }
+activity6 <- activity %>%
+     mutate(steps= ifelse(is.na(steps), mean(steps, na.rm=TRUE), steps))
+```
+
+## 7-Histogram and summary statistics of the total number of steps taken each day with the none missing data.
+
+```{r,echo=FALSE ,message=F, warning=F}
+activity7 <- activity6 %>% 
+    select(date,steps) %>%
+    group_by(date) %>%
+    summarise(step_sum = sum(steps))
+
+
+ggplot(activity7, aes(x=step_sum)) +
+    geom_histogram(colour="black", fill="white")
+
+summary(activity7)
+```
+
+#### Once missing values have been replaced with the total step mean,there is little difference in the summary statistics for both data sets.
+
+### 8-Create a new factor variable in the dataset with two levels - "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.
+
+```{r,echo=FALSE ,message=F, warning=F}
+activity8 <- activity6 %>%
+    mutate(weekday= weekdays(as.Date(date)))%>%
+    mutate(wday = ifelse((weekday == 'Saturday'| weekday == 'Sunday'),
+            "Weekend","Weekday"))%>%
+    group_by(wday,interval) %>%
+    summarise(ts = mean(steps))
+```
+
+## 9-Time series plot of 5-minute intervals and the average number of steps taken, averaged across all weekday days or weekend days. 
+
+
+```{r,echo=FALSE ,message=F, warning=F}
+xyplot(ts ~ interval | wday, activity8, type = "l", layout = c(1, 2), 
+       xlab = "Interval", ylab = "Number of steps")
+```
+
+#### There are differences between the two step disributions when comparing weekend and weekday.
+
+
+
